@@ -1,2 +1,2 @@
 # Real-Time-Video-Intelligence-System-RTVIS-
-Built a real-time video intelligence system with object detection, multi-object tracking, and rule-based event detection, deployed using FastAPI and PostgreSQL.
+RTVIS is a modular, real-time computer vision system that processes video streams to detect, track, and analyze object behavior. The system transforms raw video into actionable intelligence through event detection (intrusion, loitering, line crossing), and exposes APIs and dashboards for monitoring and control.
