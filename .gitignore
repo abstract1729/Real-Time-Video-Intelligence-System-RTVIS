@@ -1,0 +1,112 @@
+# =========================
+# macOS SYSTEM FILES
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.env/
+.envrc/
+.venv/
+
+# =========================
+# ENV & SECRETS
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# LOGS
+# =========================
+*.log
+logs/
+
+# =========================
+# DATA (VIDEOS + IMAGES)
+# =========================
+data/sample_videos/*
+data/outputs/*
+
+# Video files
+data/**/*.mp4
+data/**/*.avi
+data/**/*.mov
+data/**/*.mkv
+
+# Image files (DATA ONLY)
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+data/**/*.bmp
+data/**/*.tiff
+data/**/*.webp
+
+# =========================
+# MODEL FILES
+# =========================
+*.pt
+*.pth
+*.onnx
+*.engine
+*.ckpt
+*.weights
+
+# =========================
+# NOTEBOOK CHECKPOINTS
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# DOCKER
+# =========================
+*.pid
+
+# =========================
+# BUILD FILES
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# STREAMLIT CACHE
+# =========================
+.streamlit/
+
+# =========================
+# MISC
+# =========================
+*.tmp
+*.bak
+*.cache
