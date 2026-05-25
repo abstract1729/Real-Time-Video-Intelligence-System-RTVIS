@@ -11,11 +11,9 @@ Additionally, measure inference time for performance monitoring.
 from typing import Optional
 import time
 import numpy as np
+from model_loader import ModelLoader
 
 from ultralytics.engine.results import Results
-
-# from src.detection.model_loader import ModelLoader
-from model_loader import ModelLoader
 
 
 class YOLOInference:
@@ -129,5 +127,6 @@ if __name__ == "__main__":
     inference_engine.warmup()
     dummy_frame = np.zeros((640, 640, 3), dtype=np.uint8)
     results = inference_engine.run_inference(dummy_frame)
+    print("Inference Results:", results[0].speed)
     print("Inference executed successfully.")
     print("Runtime Statistics:", inference_engine.get_runtime_statistics())
