@@ -22,8 +22,10 @@ This converts YOLO output into a format usable by:
 
 from typing import List, Optional
 from ultralytics.engine.results import Results
-from model_loader import ModelLoader
-from yolo_inference import YOLOInference
+# from model_loader import ModelLoader
+# from yolo_inference import YOLOInference
+from src.detection.model_loader import ModelLoader
+from src.detection.yolo_inference import YOLOInference
 
 
 class DetectionPostProcessor:

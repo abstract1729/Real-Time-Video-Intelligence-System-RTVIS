@@ -11,7 +11,8 @@ Additionally, measure inference time for performance monitoring.
 from typing import Optional
 import time
 import numpy as np
-from model_loader import ModelLoader
+# from model_loader import ModelLoader
+from src.detection.model_loader import ModelLoader
 
 from ultralytics.engine.results import Results
 
