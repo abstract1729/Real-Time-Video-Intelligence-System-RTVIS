@@ -1,0 +1,7 @@
+system:
+
+  ingestion:
+
+    source_type: "webcam"
+    source: 0
+    fallback_fps: 30

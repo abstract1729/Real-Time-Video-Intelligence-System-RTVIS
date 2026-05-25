@@ -1,0 +1,5 @@
+detection:
+  model_name: "yolov8n"
+  weights_path: null
+  confidence_threshold: 0.5
+  device: "auto"
