@@ -10,7 +10,7 @@ Responsibilities:
 
 from typing import Optional
 import numpy as np
-from overlay import OverlayDrawer
+from src.visualization.overlay import OverlayDrawer
 
 
 class FrameRenderer:
@@ -90,11 +90,11 @@ class FrameRenderer:
             current_y += 30
 
         if inference_time is not None:
-            frame = self.overlay.draw_text(frame, f"Inference: " f"{inference_time*1000:.2f} ms",position=(20, current_y))
+            frame = self.overlay.draw_text(frame, f"Inference: {inference_time*1000:.2f} ms",position=(20, current_y))
             current_y += 30
 
         if detection_count is not None:
-            frame = self.overlay.draw_text(frame, f"Detections: " f"{detection_count}", position=(20, current_y))
+            frame = self.overlay.draw_text(frame, f"Detections: {detection_count}", position=(20, current_y))
 
         return frame
 
@@ -113,7 +113,6 @@ class FrameRenderer:
         """
 
         rendered_frame = frame.copy()
-
         detection_count = 0
 
         # -----------------------------
@@ -121,52 +120,26 @@ class FrameRenderer:
         # -----------------------------
 
         if detections:
+            rendered_frame = (self.render_detections(rendered_frame, detections))
 
-            rendered_frame = (
-                self.render_detections(
-                    rendered_frame,
-                    detections
-                )
-            )
-
-            detection_count = len(
-                detections
-            )
+            detection_count = len(detections)
+            
 
         # -----------------------------
         # Metrics Layer
         # -----------------------------
 
-        rendered_frame = (
-            self.render_metrics(
-
-                rendered_frame,
-
-                fps=fps,
-
-                inference_time=inference_time,
-
-                detection_count=detection_count
-            )
-        )
-
+        rendered_frame = (self.render_metrics(rendered_frame, fps=fps, 
+                                              inference_time=inference_time, detection_count=detection_count))
         self.total_render_calls += 1
-
-        self.last_rendered_frame = (
-            rendered_frame
-        )
+        self.last_rendered_frame = (rendered_frame)
 
         return rendered_frame
 
-    def get_render_statistics(
-        self
-    ) -> dict:
+    def get_render_statistics(self) -> dict:
         """
         Return renderer statistics.
         """
+        return {"total_render_calls":self.total_render_calls}
 
-        return {
 
-            "total_render_calls":
-                self.total_render_calls
-        }

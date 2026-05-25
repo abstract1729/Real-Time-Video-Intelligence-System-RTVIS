@@ -90,7 +90,7 @@ class OverlayDrawer:
         frame = self.draw_label(frame,bbox,label)
         return frame
 
-    def draw_text(self,frame: np.ndarray,text: str,position=(20, 30),color=(0, 255, 255) ) -> np.ndarray:
+    def draw_text(self,frame: np.ndarray,text: str,position=(20, 30),color=(0, 0, 255) ) -> np.ndarray:
         """
         Draw generic text.
         """
