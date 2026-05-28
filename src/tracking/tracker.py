@@ -13,6 +13,10 @@ Responsibilities:
 This module does NOT implement tracking algorithms directly.
 Actual tracker logic should reside inside backend wrappers
 (e.g., ByteTrackWrapper, DeepSORTWrapper).
+
+association logic
+ID assignment
+track update
 """
 
 from typing import List, Dict, Any
@@ -20,6 +24,7 @@ import time
 
 from src.utils.logger import get_logger
 from src.tracking.bytetrack_wrapper import ByteTrackWrapper
+from src.tracking.track_manager import TrackManager
 
 
 class ObjectTracker:
@@ -56,6 +61,7 @@ class ObjectTracker:
 
         # Placeholder tracker backend
         self.tracker_backend = None
+        self.track_manager = TrackManager(trajectory_history=self.trajectory_history)
 
         self._initialize_tracker()
 
@@ -73,9 +79,9 @@ class ObjectTracker:
         
         if self.tracker_type.lower() == "bytetrack":
             # Placeholder for future implementation
-            self.tracker_backend = self.tracker_backend = ByteTrackWrapper(track_buffer=self.track_buffer,
-                                                                           match_threshold=self.match_threshold,
-                                                                           frame_rate=self.frame_rate)
+            self.tracker_backend = ByteTrackWrapper(track_buffer=self.track_buffer,
+                                                    match_threshold=self.match_threshold,
+                                                    frame_rate=self.frame_rate)
             self.logger.info("ByteTrack backend placeholder initialized.")
 
         else:
@@ -122,7 +128,7 @@ class ObjectTracker:
 
         return valid_detections
 
-    def update_tracks(self,detections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def update_tracks(self,detections: List[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
         """
         Update tracker using current frame detections.
 
@@ -133,12 +139,12 @@ class ObjectTracker:
 
         Returns
         -------
-        List[Dict]
-            Tracked object outputs.
+        Dict[int, Dict[str, Any]]
+            Persistent tracked object outputs.
 
         Current output format:
-        [
-            {
+        {
+            1: {
                 "track_id": 1,
                 "bbox": [x1, y1, x2, y2],
                 "confidence": 0.91,
@@ -156,12 +162,13 @@ class ObjectTracker:
 
         # Placeholder tracking output
         tracked_objects = self.tracker_backend.update(validated_detections)
-        
+        persistent_tracks = self.track_manager.update_tracks(tracked_objects)
+
         tracking_time = time.time() - start_time
         self.total_tracking_time += tracking_time
         self.total_tracks_generated += len(tracked_objects)
 
-        return tracked_objects
+        return persistent_tracks
 
     def reset(self) -> None:
         """
@@ -173,6 +180,8 @@ class ObjectTracker:
         self.total_frames_processed = 0
         self.total_tracks_generated = 0
         self.total_tracking_time = 0.0
+        if self.tracker_backend is not None:
+            self.track_manager.reset()
 
     def get_stats(self) -> Dict[str, Any]:
         """
