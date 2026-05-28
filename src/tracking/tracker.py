@@ -19,6 +19,7 @@ from typing import List, Dict, Any
 import time
 
 from src.utils.logger import get_logger
+from src.tracking.bytetrack_wrapper import ByteTrackWrapper
 
 
 class ObjectTracker:
@@ -72,7 +73,9 @@ class ObjectTracker:
         
         if self.tracker_type.lower() == "bytetrack":
             # Placeholder for future implementation
-            self.tracker_backend = None
+            self.tracker_backend = self.tracker_backend = ByteTrackWrapper(track_buffer=self.track_buffer,
+                                                                           match_threshold=self.match_threshold,
+                                                                           frame_rate=self.frame_rate)
             self.logger.info("ByteTrack backend placeholder initialized.")
 
         else:
@@ -106,17 +109,12 @@ class ObjectTracker:
                 continue
 
             x1, y1, x2, y2 = bbox
-
             width = x2 - x1
             height = y2 - y1
-
             area = width * height
-
             if area < self.min_box_area:
                 continue
-
             confidence = detection["confidence"]
-
             if confidence < self.confidence_threshold:
                 continue
 
@@ -157,19 +155,8 @@ class ObjectTracker:
         validated_detections = self._validate_detections(detections)
 
         # Placeholder tracking output
-        tracked_objects = []
-
-        for idx, detection in enumerate(validated_detections):
-
-            tracked_object = {
-                "track_id": idx + 1,
-                "bbox": detection["bbox"],
-                "confidence": detection["confidence"],
-                "class_name": detection["class_name"]
-            }
-
-            tracked_objects.append(tracked_object)
-
+        tracked_objects = self.tracker_backend.update(validated_detections)
+        
         tracking_time = time.time() - start_time
         self.total_tracking_time += tracking_time
         self.total_tracks_generated += len(tracked_objects)
