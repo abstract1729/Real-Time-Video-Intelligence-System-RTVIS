@@ -1,0 +1,27 @@
+tracking:
+
+  # Master switch
+  enabled: true
+
+  # Supported:
+  # - bytetrack
+  # - deepsort (future)
+  tracker_type: "bytetrack"
+
+  # Minimum detection confidence
+  confidence_threshold: 0.5
+
+  # Number of frames to retain lost tracks
+  track_buffer: 30
+
+  # Association matching threshold
+  match_threshold: 0.8
+
+  # Ignore tiny detections
+  min_box_area: 10
+
+  # Input stream FPS
+  frame_rate: 30
+
+  # Number of trajectory points to retain
+  trajectory_history: 50
