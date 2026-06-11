@@ -59,7 +59,7 @@ class ObjectTracker:
         self.total_tracks_generated = 0
         self.total_tracking_time = 0.0
 
-        # Placeholder tracker backend
+        # Tracking backend
         self.tracker_backend = None
         self.track_manager = TrackManager(trajectory_history=self.trajectory_history)
 
@@ -67,22 +67,24 @@ class ObjectTracker:
 
     def _initialize_tracker(self) -> None:
         """
-        Initialize tracker backend.
+        Initialize tracking backend.
 
-        Currently initializes placeholder backend.
-        Future:
+        Current:
         - ByteTrackWrapper
+
+        Future:
         - DeepSORTWrapper
+        - OCSortWrapper
+        - StrongSORTWrapper
         """
 
         self.logger.info(f"Initializing tracker backend: {self.tracker_type}")
         
         if self.tracker_type.lower() == "bytetrack":
-            # Placeholder for future implementation
             self.tracker_backend = ByteTrackWrapper(track_buffer=self.track_buffer,
                                                     match_threshold=self.match_threshold,
                                                     frame_rate=self.frame_rate)
-            self.logger.info("ByteTrack backend placeholder initialized.")
+            self.logger.info("ByteTrack backend initialized.")
 
         else:
             raise ValueError(f"Unsupported tracker type: {self.tracker_type}")
@@ -156,11 +158,14 @@ class ObjectTracker:
         if not self.enabled:
             return {}
 
+        if self.tracker_backend is None:
+            raise RuntimeError("Tracker backend not initialized.")
+
         start_time = time.time()
         self.total_frames_processed += 1
         validated_detections = self._validate_detections(detections)
+        
 
-        # Placeholder tracking output
         tracked_objects = self.tracker_backend.update(validated_detections)
         persistent_tracks = self.track_manager.update_tracks(tracked_objects)
 
@@ -195,9 +200,9 @@ class ObjectTracker:
             average_tracking_time = (self.total_tracking_time / self.total_frames_processed )
 
         return {
-            "tracker_type": self.tracker_type,
-            "frames_processed": self.total_frames_processed,
-            "tracks_generated": self.total_tracks_generated,
-            "total_tracking_time": round(self.total_tracking_time,4),
-            "average_tracking_time": round(average_tracking_time,4)
-        }
+        "tracker_type": self.tracker_type,
+        "frames_processed": self.total_frames_processed,
+        "tracks_generated": self.total_tracks_generated,
+        "active_tracks":self.track_manager.get_active_track_count(),
+        "total_tracking_time": round(self.total_tracking_time,4),
+        "average_tracking_time": round(average_tracking_time,4)}

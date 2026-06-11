@@ -53,7 +53,7 @@ class TrackManager:
         center_x = int((x1 + x2) / 2)
         center_y = int((y1 + y2) / 2)
 
-        return [center_x, center_y]
+        return (center_x, center_y)
 
     def _initialize_track(self,tracked_object: Dict[str, Any]) -> None:
         """
@@ -67,6 +67,7 @@ class TrackManager:
         current_time = time.time()
 
         self.tracks[track_id] = {
+            "age": 1,
             "track_id": track_id,
             "class_name": tracked_object["class_name"],
             "confidence": tracked_object["confidence"],
@@ -88,8 +89,10 @@ class TrackManager:
         current_time = time.time()
 
         track = self.tracks[track_id]
+        track["age"] += 1
         track["bbox"] = tracked_object["bbox"]
         track["confidence"] = tracked_object["confidence"]
+        track["class_name"] = tracked_object["class_name"]
         track["last_seen"] = current_time
         track["total_visible_frames"] += 1
         track["history"].append(center)
@@ -119,7 +122,7 @@ class TrackManager:
         current_time = time.time()
         tracks_to_remove = []
 
-        for track_id, track_data in self.tracks.items():
+        for track_id, track_data in list(self.tracks.items()):
             inactive_time = (current_time - track_data["last_seen"])
 
             if inactive_time > self.max_inactive_time:
@@ -140,6 +143,13 @@ class TrackManager:
         Return all active persistent tracks.
         """
         return self.tracks
+    
+    def get_active_track_count(self) -> int:
+        """
+        Return number of active tracks.
+        """
+
+        return len(self.tracks)
 
     def reset(self) -> None:
         """
