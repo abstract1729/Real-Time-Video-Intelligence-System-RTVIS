@@ -22,7 +22,7 @@ track update
 from typing import List, Dict, Any
 import time
 
-from src.utils.logger import get_logger
+from src.utils.logger import setup_logger
 from src.tracking.bytetrack_wrapper import ByteTrackWrapper
 from src.tracking.track_manager import TrackManager
 
@@ -41,7 +41,7 @@ class ObjectTracker:
 
     def __init__(self, tracking_config: Dict[str, Any]):
 
-        self.logger = get_logger(__name__)
+        self.logger = setup_logger(__name__)
         self.config = tracking_config
         self.enabled = self.config.get("enabled", True)
 
@@ -150,11 +150,11 @@ class ObjectTracker:
                 "confidence": 0.91,
                 "class_name": "person"
             }
-        ]
+        }
         """
 
         if not self.enabled:
-            return []
+            return {}
 
         start_time = time.time()
         self.total_frames_processed += 1
@@ -181,7 +181,8 @@ class ObjectTracker:
         self.total_tracks_generated = 0
         self.total_tracking_time = 0.0
         if self.tracker_backend is not None:
-            self.track_manager.reset()
+            self.tracker_backend.reset()
+        self.track_manager.reset()
 
     def get_stats(self) -> Dict[str, Any]:
         """

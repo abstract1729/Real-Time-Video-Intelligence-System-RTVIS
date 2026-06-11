@@ -22,7 +22,7 @@ the main pipeline and orchestration layer.
 """
 
 from typing import List, Dict, Any
-from src.utils.logger import get_logger
+from src.utils.logger import setup_logger
 
 
 class ByteTrackWrapper:
@@ -42,7 +42,7 @@ class ByteTrackWrapper:
 
     def __init__(self,track_buffer: int = 30,match_threshold: float = 0.8,frame_rate: int = 30):
 
-        self.logger = get_logger(__name__)
+        self.logger = setup_logger(__name__)
         self.track_buffer = track_buffer
         self.match_threshold = match_threshold
         self.frame_rate = frame_rate

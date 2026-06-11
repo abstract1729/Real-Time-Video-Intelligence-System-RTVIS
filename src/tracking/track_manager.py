@@ -24,7 +24,7 @@ from typing import Dict, List, Any, Optional
 from collections import deque
 import time
 
-from src.utils.logger import get_logger
+from src.utils.logger import setup_logger
 
 
 class TrackManager:
@@ -34,7 +34,7 @@ class TrackManager:
 
     def __init__(self,trajectory_history: int = 50,max_inactive_time: int = 2):
 
-        self.logger = get_logger(__name__)
+        self.logger = setup_logger(__name__)
         self.trajectory_history = trajectory_history
         self.max_inactive_time = max_inactive_time
 
