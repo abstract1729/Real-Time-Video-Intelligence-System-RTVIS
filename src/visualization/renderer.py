@@ -71,8 +71,37 @@ class FrameRenderer:
 
         return rendered_frame
 
-    def render_metrics(self,frame: np.ndarray, fps: Optional[float] = None,
-                       inference_time: Optional[float] = None,detection_count: Optional[int] = None) -> np.ndarray:
+    def render_tracks(self, frame: np.ndarray, tracks: dict) -> np.ndarray:
+        """
+        Render tracked objects.
+        Parameters
+        ----------
+        frame : np.ndarray
+        tracks : dict
+        Format
+        ------
+        {
+            track_id:
+            {
+                track_data
+            }
+        }
+        """
+
+        rendered_frame = frame.copy()
+
+        for _, track_data in tracks.items():
+            rendered_frame = (
+                self.overlay.draw_track(
+                    rendered_frame,
+                    track_data
+                )
+            )
+
+        return rendered_frame
+
+    def render_metrics( self, frame: np.ndarray,fps: Optional[float]=None, inference_time: Optional[float]=None,
+                       detection_count: Optional[int]=None, track_count: Optional[int]=None)  -> np.ndarray:
         """
         Render system metrics.
         Future:
@@ -85,6 +114,7 @@ class FrameRenderer:
         """
 
         current_y = 30
+
         if fps is not None:
             frame = self.overlay.draw_text(frame,f"FPS: {fps:.2f}",position=(20, current_y))
             current_y += 30
@@ -95,10 +125,15 @@ class FrameRenderer:
 
         if detection_count is not None:
             frame = self.overlay.draw_text(frame, f"Detections: {detection_count}", position=(20, current_y))
+        
+        if track_count is not None:
+            current_y += 30
+            frame = self.overlay.draw_text(frame, f"Tracks: {track_count}", position=(20, current_y))
+
 
         return frame
 
-    def render_frame(self, frame: np.ndarray, detections: Optional[list] = None, 
+    def render_frame(self, frame: np.ndarray, detections: Optional[list] = None, tracks: Optional[dict]=None,
                      fps: Optional[float] = None, inference_time: Optional[float] = None) -> np.ndarray:
         """
         Full rendering pipeline.
@@ -114,6 +149,7 @@ class FrameRenderer:
 
         rendered_frame = frame.copy()
         detection_count = 0
+        track_count = 0
 
         # -----------------------------
         # Detection Layer
@@ -123,18 +159,29 @@ class FrameRenderer:
             rendered_frame = (self.render_detections(rendered_frame, detections))
 
             detection_count = len(detections)
+
+        # -----------------------------
+        # Track Layer
+        # -----------------------------
+
+        if tracks:
+
+            rendered_frame = (self.render_tracks( rendered_frame,tracks))
+            track_count = len(tracks)
             
 
         # -----------------------------
         # Metrics Layer
         # -----------------------------
 
-        rendered_frame = (self.render_metrics(rendered_frame, fps=fps, 
-                                              inference_time=inference_time, detection_count=detection_count))
+        rendered_frame = (self.render_metrics(rendered_frame, fps=fps, inference_time=inference_time, 
+                                              detection_count=detection_count,track_count=track_count))
         self.total_render_calls += 1
         self.last_rendered_frame = (rendered_frame)
 
         return rendered_frame
+
+    
 
     def get_render_statistics(self) -> dict:
         """
