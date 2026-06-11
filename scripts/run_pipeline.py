@@ -2,12 +2,12 @@ import sys
 from pathlib import Path
 import cv2
 
-# --------------------------------------------------
-# Add Project Root to Python Path
-# --------------------------------------------------
+# # --------------------------------------------------
+# # Add Project Root to Python Path
+# # --------------------------------------------------
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(ROOT_DIR))
+# sys.path.append(str(ROOT_DIR))
 
 # --------------------------------------------------
 # Internal Imports
@@ -21,6 +21,7 @@ from src.ingestion.stream_loader import StreamLoader
 from src.detection.model_loader import ModelLoader
 from src.detection.yolo_inference import YOLOInference
 from src.detection.postprocess import DetectionPostProcessor
+from src.tracking.tracker import ObjectTracker
 
 from src.visualization.renderer import FrameRenderer
 
@@ -41,25 +42,13 @@ def main():
         # Load Configurations
         # ------------------------------------------
 
-        system_config = ConfigLoader.load_yaml(
-            ROOT_DIR / "configs/system.yaml"
-        )
-
-        detection_config = ConfigLoader.load_yaml(
-            ROOT_DIR / "configs/detection.yaml"
-        )
-
-        ingestion_config = (
-            system_config["system"]["ingestion"]
-        )
-
-        detection_settings = (
-            detection_config["detection"]
-        )
-
-        logger.info(
-            "Configurations loaded successfully."
-        )
+        system_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/system.yaml")
+        detection_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/detection.yaml")
+        tracking_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/tracking.yaml")
+        ingestion_config = (system_config["system"]["ingestion"])
+        detection_settings = (detection_config["detection"])
+        tracking_settings = (tracking_config["tracking"])
+        logger.info("Configurations loaded successfully.")
 
         # ------------------------------------------
         # Stream Initialization
@@ -89,80 +78,35 @@ def main():
         # Detection Pipeline
         # ------------------------------------------
 
-        model_loader = ModelLoader(
-
-            model_name=
-            detection_settings.get(
-                "model_name",
-                "yolov8n"
-            ),
-
-            weights_path=
-            detection_settings.get(
-                "weights_path",
-                None
-            ),
-
-            device=
-            detection_settings.get(
-                "device",
-                "cpu"
-            )
-        )
+        model_loader = ModelLoader(model_name=detection_settings.get( "model_name","yolov8n"),
+                                   weights_path= detection_settings.get( "weights_path", None),
+                                   device= detection_settings.get("device","cpu"))
 
         model_loader.load_model()
+        logger.info("YOLO model loaded.")
 
-        logger.info(
-            "YOLO model loaded."
-        )
-
-        inference_engine = YOLOInference(
-
-            model_loader=model_loader,
-
-            confidence_threshold=
-            detection_settings.get(
-                "confidence_threshold",
-                0.5
-            )
-        )
-
+        inference_engine = YOLOInference(model_loader=model_loader,
+                                         confidence_threshold=detection_settings.get("confidence_threshold",0.5))
         inference_engine.warmup()
+        logger.info("Inference engine initialized.")
+        postprocessor = (DetectionPostProcessor(confidence_threshold=detection_settings.get("confidence_threshold",0.5),
+                                                target_classes=detection_settings.get( "target_classes",None)))
 
-        logger.info(
-            "Inference engine initialized."
-        )
+        logger.info("Postprocessor initialized.")
 
-        postprocessor = (
-            DetectionPostProcessor(
+        # ------------------------------------------
+        # Tracking Pipeline
+        # ------------------------------------------
 
-                confidence_threshold=
-                detection_settings.get(
-                    "confidence_threshold",
-                    0.5
-                ),
-
-                target_classes=
-                detection_settings.get(
-                    "target_classes",
-                    None
-                )
-            )
-        )
-
-        logger.info(
-            "Postprocessor initialized."
-        )
+        tracker = ObjectTracker(tracking_settings)
+        logger.info("Tracker initialized.")
 
         # ------------------------------------------
         # Visualization
         # ------------------------------------------
 
         renderer = FrameRenderer()
-
-        logger.info(
-            "Renderer initialized."
-        )
+        logger.info("Renderer initialized.")
 
         # ------------------------------------------
         # Main Pipeline Loop
@@ -170,82 +114,46 @@ def main():
 
         while capture_manager.is_active():
 
-            success, frame = (
-                capture_manager.read_frame()
-            )
-
+            success, frame = (capture_manager.read_frame())
             if not success:
-
-                logger.warning(
-                    "Frame read failed."
-                )
-
+                logger.warning( "Frame read failed.")
                 break
 
             # -----------------------------
             # YOLO Inference
             # -----------------------------
-
-            results = (
-                inference_engine
-                .run_inference(frame)
-            )
+            results = (inference_engine.run_inference(frame))
 
             # -----------------------------
             # Postprocess
             # -----------------------------
+            detections = (postprocessor.process(results))
 
-            detections = (
-                postprocessor.process(
-                    results
-                )
-            )
+            # -----------------------------
+            # Tracking
+            # -----------------------------
+            tracks = (tracker.update_tracks(detections))
 
             # -----------------------------
             # Runtime Metrics
             # -----------------------------
-
-            runtime_stats = (
-                inference_engine
-                .get_runtime_statistics()
-            )
-
-            inference_time = (
-                runtime_stats[
-                    "last_inference_sec"
-                ]
-            )
+            runtime_stats = (inference_engine.get_runtime_statistics())
+            tracking_stats = (tracker.get_stats())
+            inference_time = (runtime_stats["last_inference_sec"])
 
             fps = None
 
-            if inference_time is not None:
-                fps = (
-                    1 / inference_time
-                )
+            if inference_time is not None and inference_time > 0:
+                fps = (1 / inference_time)
 
             # -----------------------------
             # Render
             # -----------------------------
 
-            rendered_frame = (
-                renderer.render_frame(
+            rendered_frame = (renderer.render_frame(frame,tracks=tracks,
+                                                    fps=fps,inference_time=inference_time))
 
-                    frame,
-
-                    detections=
-                    detections,
-
-                    fps=fps,
-
-                    inference_time=
-                    inference_time
-                )
-            )
-
-            cv2.imshow(
-                "RTVIS",
-                rendered_frame
-            )
+            cv2.imshow("RTVIS",rendered_frame)
 
             if (
                 cv2.waitKey(1)
@@ -260,21 +168,19 @@ def main():
                 break
 
     except Exception as error:
-
-        logger.error(
-            f"Pipeline failed: {error}"
-        )
+        logger.error(f"Pipeline failed: {error}")
 
     finally:
 
         if capture_manager is not None:
             capture_manager.release()
 
+        if "tracker" in locals():
+            tracker.reset()
+
         cv2.destroyAllWindows()
 
-        logger.info(
-            "Resources released."
-        )
+        logger.info("Resources released.")
 
 
 if __name__ == "__main__":
