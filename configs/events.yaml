@@ -1,0 +1,16 @@
+line_crossing:
+  enabled: true
+  line_start: [300, 100]
+  line_end: [300, 500]
+
+intrusion:
+  enabled: true
+  zone_points:
+    - [100, 100]
+    - [500, 100]
+    - [500, 400]
+    - [100, 400]
+
+loitering:
+  enabled: true
+  duration_threshold: 30
