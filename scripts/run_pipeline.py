@@ -50,27 +50,22 @@ def main():
         ingestion_config = (system_config["system"]["ingestion"])
         detection_settings = (detection_config["detection"])
         tracking_settings = (tracking_config["tracking"])
+        line_crossing_config = events_config["line_crossing"]
+        line_start = tuple(line_crossing_config["line_start"])
+        line_end = tuple(line_crossing_config["line_end"])
+        intrusion_zone = [tuple(point) for point in events_config["intrusion"]["zone_points"]]
+
         logger.info("Configurations loaded successfully.")
 
         # ------------------------------------------
         # Stream Initialization
         # ------------------------------------------
 
-        stream_loader = StreamLoader(
-            ingestion_config
-        )
+        stream_loader = StreamLoader(ingestion_config)
+        capture_manager = (stream_loader.load_stream())
+        capture_manager.open(fallback_fps=ingestion_config.get( "fallback_fps",30))
 
-        capture_manager = (
-            stream_loader.load_stream()
-        )
-
-        capture_manager.open(
-            fallback_fps=
-            ingestion_config.get( "fallback_fps",30))
-
-        logger.info(
-            "Video stream initialized."
-        )
+        logger.info("Video stream initialized.")
 
         # ------------------------------------------
         # Detection Pipeline
@@ -167,21 +162,13 @@ def main():
             # -----------------------------
             # Render
             # -----------------------------
-            rendered_frame = renderer.render_frame(frame, tracks=tracks,events=events,
-                                                   fps=fps,inference_time=inference_time)
+            rendered_frame = renderer.render_frame(frame, tracks=tracks, events=events, line_start=line_start,
+                                                   line_end=line_end, intrusion_zone=intrusion_zone, fps=fps, inference_time=inference_time)
 
             cv2.imshow("RTVIS",rendered_frame)
 
-            if (
-                cv2.waitKey(1)
-                & 0xFF
-                == 27
-            ):
-
-                logger.info(
-                    "Exit requested."
-                )
-
+            if (cv2.waitKey(1) & 0xFF== 27):
+                logger.info("Exit requested.")
                 break
 
     except Exception as error:
