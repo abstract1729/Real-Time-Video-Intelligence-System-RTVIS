@@ -22,6 +22,7 @@ from src.detection.model_loader import ModelLoader
 from src.detection.yolo_inference import YOLOInference
 from src.detection.postprocess import DetectionPostProcessor
 from src.tracking.tracker import ObjectTracker
+from src.events.event_engine import EventEngine
 
 from src.visualization.renderer import FrameRenderer
 
@@ -45,6 +46,7 @@ def main():
         system_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/system.yaml")
         detection_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/detection.yaml")
         tracking_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/tracking.yaml")
+        events_config = ConfigLoader.load_yaml(ROOT_DIR / "configs/events.yaml")
         ingestion_config = (system_config["system"]["ingestion"])
         detection_settings = (detection_config["detection"])
         tracking_settings = (tracking_config["tracking"])
@@ -64,11 +66,7 @@ def main():
 
         capture_manager.open(
             fallback_fps=
-            ingestion_config.get(
-                "fallback_fps",
-                30
-            )
-        )
+            ingestion_config.get( "fallback_fps",30))
 
         logger.info(
             "Video stream initialized."
@@ -100,6 +98,13 @@ def main():
 
         tracker = ObjectTracker(tracking_settings)
         logger.info("Tracker initialized.")
+
+        # ------------------------------------------
+        # Event Pipeline
+        # ------------------------------------------
+
+        event_engine = EventEngine(events_config)
+        logger.info("Event engine initialized.")
 
         # ------------------------------------------
         # Visualization
@@ -135,6 +140,19 @@ def main():
             tracks = (tracker.update_tracks(detections))
 
             # -----------------------------
+            # Event Processing
+            # -----------------------------
+            events = event_engine.process_tracks(tracks)
+
+            # Log events
+            for event in events:
+                logger.info(
+                    f"Event detected: "
+                    f"{event['event_type']} "
+                    f"(track_id={event['track_id']})"
+                )
+
+            # -----------------------------
             # Runtime Metrics
             # -----------------------------
             runtime_stats = (inference_engine.get_runtime_statistics())
@@ -149,9 +167,8 @@ def main():
             # -----------------------------
             # Render
             # -----------------------------
-
-            rendered_frame = (renderer.render_frame(frame,tracks=tracks,
-                                                    fps=fps,inference_time=inference_time))
+            rendered_frame = renderer.render_frame(frame, tracks=tracks,events=events,
+                                                   fps=fps,inference_time=inference_time)
 
             cv2.imshow("RTVIS",rendered_frame)
 
