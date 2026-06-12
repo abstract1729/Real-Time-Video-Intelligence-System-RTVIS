@@ -11,7 +11,8 @@ Responsibilities:
 from typing import Optional
 import numpy as np
 from src.visualization.overlay import OverlayDrawer
-
+from collections import deque
+from datetime import datetime
 
 class FrameRenderer:
     """
@@ -44,6 +45,10 @@ class FrameRenderer:
         # Runtime State
         self.last_rendered_frame = None
         self.total_render_calls = 0
+
+        self.event_history = deque(maxlen=10)
+        self.event_counts = {"line_crossing": 0,"intrusion": 0,"loitering": 0}
+        self.seen_events = set()
 
     def render_detections(self,frame: np.ndarray,detections: list) -> np.ndarray:
         """
@@ -97,6 +102,95 @@ class FrameRenderer:
                     track_data
                 )
             )
+
+        return rendered_frame
+
+    def update_event_statistics(self,events: list)-> None:
+        """
+        Update cumulative event counts and history.
+        """
+
+        for event in events:
+            event_key = (event["event_type"],event["track_id"])
+
+            if event_key in self.seen_events:
+                continue
+
+            self.seen_events.add(event_key)
+
+            event_type = event["event_type"]
+
+            if event_type in self.event_counts:
+                self.event_counts[event_type] += 1
+
+            history_entry = (
+            f"{datetime.now().strftime('%H:%M:%S')} "
+            f"{event_type.upper()} "
+            f"ID:{event['track_id']}")
+
+            self.event_history.append(history_entry)
+
+    def render_virtual_line(self,frame: np.ndarray,line_start: tuple,line_end: tuple) -> np.ndarray:
+        """
+        Render line-crossing boundary.
+        """
+
+        rendered_frame = frame.copy()
+        rendered_frame = (self.overlay.draw_virtual_line(rendered_frame,line_start,line_end))
+
+        return rendered_frame
+
+    def render_intrusion_zone(self,frame: np.ndarray,zone_points: list) -> np.ndarray:
+        """
+        Render intrusion polygon.
+        """
+
+        rendered_frame = frame.copy()
+        rendered_frame = (self.overlay.draw_intrusion_zone(rendered_frame,zone_points))
+
+        return rendered_frame
+
+    def render_event_statistics(self,frame: np.ndarray) -> np.ndarray:
+        rendered_frame = frame.copy()
+        start_y = 180
+
+        rendered_frame = self.overlay.draw_text(
+            rendered_frame,
+            f"Line Crossings: "
+            f"{self.event_counts['line_crossing']}",
+            position=(20, start_y)
+        )
+
+        start_y += 30
+
+        rendered_frame = self.overlay.draw_text(
+            rendered_frame,
+            f"Intrusions: "
+            f"{self.event_counts['intrusion']}",
+            position=(20, start_y)
+        )
+
+        start_y += 30
+
+        rendered_frame = self.overlay.draw_text(
+            rendered_frame,
+            f"Loitering: "
+            f"{self.event_counts['loitering']}",
+            position=(20, start_y)
+        )
+
+        return rendered_frame
+
+    def render_event_history(self, frame: np.ndarray) -> np.ndarray:
+        rendered_frame = frame.copy()
+        start_y = 300
+
+        rendered_frame = self.overlay.draw_text(rendered_frame,"Recent Events",position=(20, start_y))
+        start_y += 30
+
+        for event in reversed(self.event_history):
+            rendered_frame = self.overlay.draw_text(rendered_frame,event,position=(20, start_y))
+            start_y += 25
 
         return rendered_frame
 
@@ -171,9 +265,9 @@ class FrameRenderer:
 
         return frame
 
-    def render_frame(self,frame: np.ndarray,detections: Optional[list] = None,
-                     tracks: Optional[dict] = None,events: Optional[list] = None,fps: Optional[float] = None,
-                     inference_time: Optional[float] = None) -> np.ndarray:
+    def render_frame(self,frame: np.ndarray,detections=None,tracks=None,events=None,line_start=None,
+                     line_end=None,intrusion_zone=None,fps=None,inference_time=None) -> np.ndarray:
+
         """
         Full rendering pipeline.
         Pipeline:
@@ -196,7 +290,6 @@ class FrameRenderer:
 
         if detections:
             rendered_frame = (self.render_detections(rendered_frame, detections))
-
             detection_count = len(detections)
 
         # -----------------------------
@@ -204,37 +297,43 @@ class FrameRenderer:
         # -----------------------------
 
         if tracks:
-
             rendered_frame = (self.render_tracks( rendered_frame,tracks))
             track_count = len(tracks)
+        
+        # -----------------------------
+        # Region Layer
+        # -----------------------------
+
+        if line_start is not None and line_end is not None:
+            rendered_frame = (self.render_virtual_line(rendered_frame, line_start,line_end))
+
+
+        if intrusion_zone is not None:
+            rendered_frame = (self.render_intrusion_zone(rendered_frame,intrusion_zone))
+
         
         # -----------------------------
         # Event Layer
         # -----------------------------
 
         if events:
-
-            rendered_frame = (
-                self.render_events(
-                    rendered_frame,
-                    events
-                )
-            )
+            rendered_frame = (self.render_events(rendered_frame,events))
+            self.update_event_statistics(events)
             
 
         # -----------------------------
         # Metrics Layer
         # -----------------------------
-
         rendered_frame = (self.render_metrics(rendered_frame, fps=fps, inference_time=inference_time, 
                                               detection_count=detection_count,track_count=track_count))
+        rendered_frame = (self.render_event_statistics(rendered_frame))
+
+        rendered_frame = (self.render_event_history(rendered_frame))
+        
         self.total_render_calls += 1
         self.last_rendered_frame = (rendered_frame)
 
         return rendered_frame
-
-
-    
 
     def get_render_statistics(self) -> dict:
         """

@@ -54,10 +54,10 @@ class OverlayDrawer:
         color = tuple(int(x) for x in np.random.randint(0, 255, size=3))
         return color
 
-    def _draw_intrusion_zone(self,frame: np.ndarray,points: list) -> np.ndarray:
+    def draw_intrusion_zone(self,frame: np.ndarray,points: list) -> np.ndarray:
         return self.draw_polygon(frame,points,color=(255, 0, 0))
 
-    def _draw_virtual_line(self,frame: np.ndarray,
+    def draw_virtual_line(self,frame: np.ndarray,
                         start_point: tuple,end_point: tuple) -> np.ndarray:
 
         return self.draw_line(frame,start_point,end_point,color=(0, 255, 255))
