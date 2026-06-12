@@ -54,6 +54,14 @@ class OverlayDrawer:
         color = tuple(int(x) for x in np.random.randint(0, 255, size=3))
         return color
 
+    def _draw_intrusion_zone(self,frame: np.ndarray,points: list) -> np.ndarray:
+        return self.draw_polygon(frame,points,color=(255, 0, 0))
+
+    def _draw_virtual_line(self,frame: np.ndarray,
+                        start_point: tuple,end_point: tuple) -> np.ndarray:
+
+        return self.draw_line(frame,start_point,end_point,color=(0, 255, 255))
+
     def draw_bbox(self,frame: np.ndarray,bbox: list, color: tuple =(0, 0, 255)) -> np.ndarray:
         """
         Draw bounding box.
@@ -103,6 +111,21 @@ class OverlayDrawer:
         Draw generic text.
         """
         cv2.putText(frame,text,position,self.font,self.font_scale,color,self.line_thickness)
+        return frame
+
+    def draw_event_label(self,frame: np.ndarray,text: str,
+                         position: tuple,color=(0, 255, 255)) -> np.ndarray:
+        """
+        Draw event notification.
+
+        Used for:
+        - Line Crossing
+        - Intrusion
+        - Loitering
+        """
+
+        cv2.putText(frame,text,position,self.font,
+                    self.font_scale,color,self.line_thickness)
         return frame
 
     def draw_polygon(self, frame: np.ndarray,points: list,color=(255, 0, 0)) -> np.ndarray:

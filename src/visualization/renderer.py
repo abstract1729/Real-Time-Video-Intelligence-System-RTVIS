@@ -100,6 +100,44 @@ class FrameRenderer:
 
         return rendered_frame
 
+    def render_events(self,frame: np.ndarray,events: list) -> np.ndarray:
+        """
+        Render event notifications.
+        Parameters
+        ----------
+        frame : np.ndarray
+        events : list
+        Format
+        ------
+        [
+            {
+                "event_type": "...",
+                "track_id": ...
+            }
+        ]
+        """
+
+        rendered_frame = frame.copy()
+        start_y = 120
+
+        for event in events:
+            text = (
+                f"{event['event_type'].upper()} "
+                f"(ID:{event['track_id']})"
+            )
+
+            rendered_frame = (
+                self.overlay.draw_event_label(
+                    rendered_frame,
+                    text,
+                    position=(20, start_y)
+                )
+            )
+
+            start_y += 30
+
+        return rendered_frame
+
     def render_metrics( self, frame: np.ndarray,fps: Optional[float]=None, inference_time: Optional[float]=None,
                        detection_count: Optional[int]=None, track_count: Optional[int]=None)  -> np.ndarray:
         """
@@ -133,8 +171,9 @@ class FrameRenderer:
 
         return frame
 
-    def render_frame(self, frame: np.ndarray, detections: Optional[list] = None, tracks: Optional[dict]=None,
-                     fps: Optional[float] = None, inference_time: Optional[float] = None) -> np.ndarray:
+    def render_frame(self,frame: np.ndarray,detections: Optional[list] = None,
+                     tracks: Optional[dict] = None,events: Optional[list] = None,fps: Optional[float] = None,
+                     inference_time: Optional[float] = None) -> np.ndarray:
         """
         Full rendering pipeline.
         Pipeline:
@@ -168,6 +207,19 @@ class FrameRenderer:
 
             rendered_frame = (self.render_tracks( rendered_frame,tracks))
             track_count = len(tracks)
+        
+        # -----------------------------
+        # Event Layer
+        # -----------------------------
+
+        if events:
+
+            rendered_frame = (
+                self.render_events(
+                    rendered_frame,
+                    events
+                )
+            )
             
 
         # -----------------------------
@@ -180,6 +232,7 @@ class FrameRenderer:
         self.last_rendered_frame = (rendered_frame)
 
         return rendered_frame
+
 
     
 
