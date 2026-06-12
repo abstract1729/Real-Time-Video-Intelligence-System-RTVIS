@@ -112,8 +112,8 @@ Current output:
 ## Roadmap
 
 * V1 — Detection Pipeline ✅
-* V2 — Tracking (DeepSORT / ByteTrack)
-* V3 — Event Intelligence
+* V2 — Tracking (DeepSORT / ByteTrack) ✅
+* V3 — Event Intelligence ✅
 * V4 — Storage Layer
 * V5 — FastAPI Layer
 * V6 — Dashboard Layer
